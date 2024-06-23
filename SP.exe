@@ -1,0 +1,805 @@
+#define BLYNK_TEMPLATE_ID "TMPL3AmLqB0V7"
+#define BLYNK_TEMPLATE_NAME "Smart parking IOT"
+
+
+#define BLYNK_PRINT Serial
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+#include <LCD_I2C.h>
+#include <ESP32Servo.h>
+ 
+Servo myservo;  // create servo object to control a servo
+// 16 servo objects can be created on the ESP32
+ 
+int pos = 0;    // variable to store the servo position
+// Recommended PWM GPIO pins on the ESP32 include 2,4,12-19,21-23,25-27,32-33 
+int servoPin = 13;
+ 
+LCD_I2C lcd(0x27, 16, 2); // Default address of most PCF8574 modules, change according
+
+#define BLYNK_AUTH_TOKEN "LKskwzlrtbu2IRP9n0MlW8e_tybxOIVh"
+
+char auth[] = "LKskwzlrtbu2IRP9n0MlW8e_tybxOIVh";
+
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "CAR";
+char passd[] = "123456789";
+
+#define ir_car1 36
+#define ir_car2 35
+#define ir_car3 32
+#define ir_car4 33
+
+int ir_gate = 34;
+
+int red  = 25;
+int green = 26;
+int buzz = 27;
+
+int full=0;
+
+ 
+int S1=0, S2=0, S3=0, S4=0;
+
+ 
+void setup(){
+  
+Serial.begin(9600);
+// initialize digital pins as input.
+pinMode(ir_car1, INPUT);
+pinMode(ir_car2, INPUT);
+pinMode(ir_car3, INPUT);
+pinMode(ir_car4, INPUT);
+pinMode(ir_gate, INPUT);
+  pinMode(red, OUTPUT);
+pinMode(green, OUTPUT);  
+  pinMode(buzz, OUTPUT);
+
+  // Allow allocation of all timers
+  ESP32PWM::allocateTimer(0);
+  ESP32PWM::allocateTimer(1);
+  ESP32PWM::allocateTimer(2);
+  ESP32PWM::allocateTimer(3);
+  myservo.setPeriodHertz(50);    // standard 50 hz servo
+  myservo.attach(servoPin, 500, 2400); // attaches the servo on pin 18 to the servo object
+  // using default min/max of 1000us and 2000us
+
+myservo.write(100);  
+
+//Print text on display
+    lcd.begin(); // If you are using more I2C devices using the Wire library use lcd.begin(false)
+                 // this stop the library(LCD_I2C) from calling Wire.begin()
+    lcd.backlight();
+lcd.setCursor (0,0);
+lcd.print("     IOT Car    ");
+lcd.setCursor (0,1);
+lcd.print(" Parking System ");
+delay (5000);
+lcd.clear();  
+  Blynk.begin(auth, ssid, passd); 
+Read_Sensor();
+
+}
+ 
+void loop()
+{
+Blynk.run();
+ Read_Sensor();
+int ir_gate = digitalRead(34);
+
+if((ir_gate == 0) &&  (full == 1))
+
+{
+  
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Is ");
+     lcd.setCursor (0,1);
+     lcd.print("    Full   ");
+  myservo.write(100);  
+  delay(1000);
+  
+}
+
+
+if((ir_gate == 0)&& (full == 0))
+{
+  
+if( S1 ==0 && S2 == 0 && S3 == 0 && S4 == 0)
+{
+  int a = 3;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+  myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+  
+}
+
+
+else if( S1 ==0 && S2 == 0 && S3 == 1 && S4 == 0)
+{
+  
+  int a = 1;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100); 
+  delay(3000); 
+  Read_Sensor();
+  if((a==1) && (S1==1))
+  {
+     
+  }
+  else
+  {
+
+  Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+   
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  
+  }
+
+  
+}
+
+  else if( S1 ==1 && S2 == 0 && S3 == 1 && S4 == 0)
+{
+  int a = 4;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+  
+ delay(3000); 
+   Read_Sensor();
+  if((a==4) && (S4==1))
+  {
+     
+  }
+  else if((a==4) && (S2==1))
+  {
+    Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+    digitalWrite(buzz,LOW);
+  }
+  Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "only 1 slot is Left over!!");
+    Blynk.logEvent("alert1","only 1 slot is Left over!!!");
+  
+}
+
+
+  else if( S1 ==1 && S2 == 0 && S3 == 1 && S4 == 1)
+{
+  int a = 2;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+
+ 
+  
+}
+
+else if( S1 ==1 && S2 == 1 && S3 == 1 && S4 == 0)
+{
+  int a = 4;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+  
+
+}
+
+
+else if( S1 ==0 && S2 == 1 && S3 == 1 && S4 == 0)
+{
+  int a = 1;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+  
+delay(3000); 
+  Read_Sensor();
+  if((a==1) && (S1==1))
+  {
+     
+  }
+else if((a==1) && (S4==1))
+ 
+  { 
+    Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+
+    
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  }
+
+  Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "only 1 slot is Left over!!");
+    Blynk.logEvent("alert1","only 1 slot is Left over!!!");  
+  
+}
+
+
+else if( S1 ==0 && S2 == 0 && S3 == 0 && S4 == 1)
+{
+  int a = 1;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+  
+delay(3000); 
+  Read_Sensor();
+  if((a==1) && (S1==1))
+  {
+     
+  }
+else 
+ 
+  {
+    Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+ 
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  }
+
+  
+}
+
+
+
+else if( S1 ==1 && S2 == 0 && S3 == 0 && S4 == 1)
+{
+  int a = 3;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+  
+delay(3000); 
+  Read_Sensor();
+  if((a==3) && (S3==1))
+  {
+     
+  }
+else if((a==3) && (S2==1))
+ 
+  {
+Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+ 
+    
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  }
+  Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "only 1 slot is Left over!!");
+    Blynk.logEvent("alert1","only 1 slot is Left over!!!");
+  
+}
+
+
+else if( S1 ==0 && S2 == 1 && S3 == 1 && S4 == 1)
+{
+  int a = 1;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+   
+}
+
+
+else if( S1 ==1 && S2 == 1 && S3 == 0 && S4 == 1)
+{
+  int a = 3;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+   
+}
+
+
+
+
+else if( S1 ==0 && S2 == 0 && S3 == 1 && S4 == 1)
+{
+  int a = 2;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+
+  delay(3000); 
+    Read_Sensor();
+  if((a==2) && (S2==1))
+  {
+     
+  }
+else if((a==2) && (S1==1))
+ 
+  {
+Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+ 
+    
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  }
+
+  Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "only 1 slot is Left over!!");
+    Blynk.logEvent("alert1","only 1 slot is Left over!!!");  
+}
+
+
+
+
+
+else if( S1 ==0 && S2 == 1 && S3 == 0 && S4 == 0)
+{
+  int a = 4;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+
+delay(3000); 
+  Read_Sensor();
+  if((a==4) && (S4==1))
+  {
+     
+  }
+else 
+ 
+  {
+
+    Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+ 
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  }
+
+
+  
+}
+
+
+
+
+else if( S1 ==0 && S2 == 1 && S3 == 0 && S4 == 1)
+{
+  int a = 3;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+
+  delay(3000); 
+    Read_Sensor();
+  if((a==3) && (S3==1))
+  {
+     
+  }
+else if((a==3) && (S1==1))
+ 
+  {
+
+    Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+ 
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  }
+
+    Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "only 1 slot is Left over!!");
+    Blynk.logEvent("alert1","only 1 slot is Left over!!!");
+}
+
+
+
+
+
+else if( S1 ==1 && S2 == 0 && S3 == 0 && S4 == 0)
+{
+  int a = 3;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+  
+delay(3000); 
+  Read_Sensor();
+  if((a==3) && (S3==1))
+  {
+     
+  }
+else 
+  {
+Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+ 
+    
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  }
+
+
+  
+}
+
+
+
+
+
+
+else if( S1 ==1 && S2 == 1 && S3 == 0 && S4 == 0)
+{
+  int a = 4;
+   lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Solt Num:");
+     lcd.setCursor (0,1);
+     lcd.print(a);
+  delay(2000);
+
+  lcd.clear();
+  lcd.setCursor (0,0);
+    lcd.print("Parking Gate is ");
+     lcd.setCursor (0,1);
+     lcd.print(" Open ");
+ myservo.write(0);  
+  delay(2000);
+  myservo.write(100);  
+
+  delay(3000); 
+    Read_Sensor();
+  if((a==4) && (S4==1))
+  {
+     
+  }
+else if((a==4) && (S3==1))
+ 
+  {
+ Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "one of your user have parked in wrong Slot!!!");
+ 
+    Blynk.logEvent("warn","Warning: Wrong Parking is Detected!!!Please ignore this message if you have parked in Correct parking Slot!");
+ 
+    
+    digitalWrite(buzz,HIGH);
+    delay(3000);
+     digitalWrite(buzz,LOW);
+  }
+
+    Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "only 1 slot is Left over!!");
+    Blynk.logEvent("alert1","only 1 slot is Left over!!!");
+}
+
+
+
+
+
+}
+else
+{
+  
+
+ lcd.setCursor (0,0);
+ lcd.clear();
+ 
+  if(S1==1)
+   {
+    lcd.setCursor (0,0);
+    lcd.print("Slot 1: ");
+     lcd.setCursor (0,1);
+     lcd.print("Occupied");
+    Blynk.virtualWrite(V0,"Occupied");
+         Blynk.virtualWrite(V4,"Please Park in Allocated parking Slot!!!");
+   }
+  else
+   {
+     lcd.setCursor (0,0);
+    lcd.print("Slot 1: ");
+     lcd.setCursor (0,1);
+     lcd.print("Vacant");
+     Blynk.virtualWrite(V0,"Vacant");
+          Blynk.virtualWrite(V4,"Please Park in Allocated parking Slot!!!");
+   }
+  delay(1000);
+ lcd.clear();
+
+ 
+  if(S2==1)
+   {
+     lcd.setCursor (0,0);
+     lcd.print("Slot 2: ");
+     lcd.setCursor (0,1);
+     lcd.print("Occupied");
+     Blynk.virtualWrite(V1,"Occupied");
+          Blynk.virtualWrite(V4,"Please Park in Allocated parking Slot!!!");
+    }
+  else
+   {
+      lcd.setCursor (0,0);
+    lcd.print("Slot 2: ");
+     lcd.setCursor (0,1);
+     lcd.print("Vacant");
+     Blynk.virtualWrite(V1,"Vacant");
+          Blynk.virtualWrite(V4,"Please Park in Allocated parking Slot!!!");
+    }
+ delay(1000);
+ lcd.clear();
+ 
+  if(S3==1)
+   {
+    
+    lcd.setCursor (0,0);
+    lcd.print("Slot 3: ");
+    lcd.setCursor (0,1);
+    lcd.print("Occupied");
+     Blynk.virtualWrite(V2,"Occupied");
+          Blynk.virtualWrite(V4,"Please Park in Allocated parking Slot!!!");
+    }
+  else
+   {
+     lcd.setCursor (0,0);
+     lcd.print("Slot 3: ");
+     lcd.setCursor (0,1);
+     lcd.print("Vacant");
+     Blynk.virtualWrite(V2,"Vacant");
+     Blynk.virtualWrite(V4,"Please Park in Allocated parking Slot!!!");
+    }
+ delay(1000);
+ lcd.setCursor (0,0);
+ lcd.clear();
+
+
+  
+  if(S4==1)
+   {
+    lcd.setCursor (0,0);
+    lcd.print("Slot 4: ");
+    lcd.setCursor (0,1);
+    lcd.print("Occupied");
+    Blynk.virtualWrite(V3,"Occupied");
+     Blynk.virtualWrite(V4,"Please Park in Allocated parking Slot!!!");
+    }
+  else
+   {
+    lcd.setCursor (0,0);
+    lcd.print("Slot 4: ");
+    lcd.setCursor (0,1);
+    lcd.print("Vacant");
+     Blynk.virtualWrite(V3,"Vacant");
+     Blynk.virtualWrite(V4,"Please Park in Allocated parking Slot!!!");
+    }
+ delay(1000);
+ lcd.setCursor (0,0);
+ lcd.clear();
+
+ 
+}
+
+
+
+ if(S1 ==1 && S2 == 1 && S3 == 1 && S4 == 1)
+ {
+  full = 1;
+  digitalWrite(green,LOW);
+  digitalWrite(red,HIGH);
+    Blynk.email("swapnavittalmudnoors280@gmail.com", "Alert", "All Slots Are Full!!");
+    Blynk.logEvent("full_alert","All Slots Are Full!!");
+  delay(1000);
+ }
+ else
+ {
+  full = 0;
+     digitalWrite(green,HIGH);
+  digitalWrite(red,LOW);
+ }
+
+}
+
+ 
+void Read_Sensor()
+{
+ S1=0, S2=0, S3=0, S4=0;
+ if(digitalRead(ir_car1) == 0)
+ {
+  S1=1;
+  } //read degital data from IR sensor1
+ if(digitalRead(ir_car2) == 0)
+ {
+  S2=1;
+  } //read degital data from IR sensor2
+ if(digitalRead(ir_car3) == 0)
+ {
+  S3=1;
+  } // read degital data from IR sensor3
+ if(digitalRead(ir_car4) == 0)
+ {
+  S4=1;
+ } // read degital data from IR sensor4
+
+}
